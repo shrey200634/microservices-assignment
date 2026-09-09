@@ -10,7 +10,6 @@ spring:
     USER_SERVICE_URL: http://user-service:8081
     NOTIFICATION_SERVICE_URL: http://notification-service:8082
 
-
   cloud:
     gateway:
       server:
@@ -30,6 +29,32 @@ spring:
               uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8082}
               predicates:
                 - Path=/api/notifications/**
+
+            - id: user-service-docs
+              uri: ${USER_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/user-service/v3/api-docs/**
+              filters:
+                - RewritePath=/user-service/(?<remaining>.*), /${remaining}
+
+            - id: notification-service-docs
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/notification-service/v3/api-docs/**
+              filters:
+                - RewritePath=/notification-service/(?<remaining>.*), /${remaining}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    urls:
+      - name: User Service
+        url: /user-service/v3/api-docs
+      - name: Notification Service
+        url: /notification-service/v3/api-docs
 
 jwt:
   secret: ${JWT_SECRET:change-this-to-a-long-random-base64-secret-at-least-32-bytes-please}

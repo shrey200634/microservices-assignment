@@ -17,11 +17,23 @@ import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final SecretKey signingKey;
+
+    private static final List<String> PUBLIC_PATH_PREFIXES = List.of(
+            "/api/auth/",
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/webjars/",
+            "/user-service/v3/api-docs",
+            "/notification-service/v3/api-docs",
+            "/actuator/",
+            "/favicon.ico"
+    );
 
     public JwtAuthenticationFilter(@Value("${jwt.secret}") String secret) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -31,7 +43,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        if (path.startsWith("/api/auth/")) {
+        if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
 
@@ -58,6 +70,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         } catch (JwtException | IllegalArgumentException e) {
             return unauthorized(exchange, "Invalid or expired token");
         }
+    }
+
+    private boolean isPublicPath(String path) {
+        if ("/swagger-ui.html".equals(path)) {
+            return true;
+        }
+        for (String prefix : PUBLIC_PATH_PREFIXES) {
+            if (path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
