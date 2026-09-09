@@ -6,7 +6,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -72,12 +72,13 @@ services:
     restart: on-failure
     environment:
       JWT_SECRET: ${JWT_SECRET}
+      USER_SERVICE_URL: http://user-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8082
     ports:
       - "8080:8080"
     depends_on:
       - user-service
       - notification-service
-
 volumes:
   mysql_data:
   nats_data:
