@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: api-gateway
+
+  environment:
+    JWT_SECRET: ${JWT_SECRET}
+    USER_SERVICE_URL: http://user-service:8081
+    NOTIFICATION_SERVICE_URL: http://notification-service:8082
+
+
   cloud:
     gateway:
       server:

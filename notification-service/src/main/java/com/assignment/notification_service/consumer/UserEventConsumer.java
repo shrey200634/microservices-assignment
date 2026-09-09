@@ -1,7 +1,9 @@
 package com.assignment.notification_service.consumer;
 
+import com.assignment.notification_service.entity.Notification;
 import com.assignment.notification_service.event.UserEvent;
 import com.assignment.notification_service.notification.NotificationProvider;
+import com.assignment.notification_service.repository.NotificationRepository;
 import io.nats.client.*;
 import io.nats.client.api.PublishAck;
 import jakarta.annotation.PreDestroy;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,6 +25,8 @@ import static com.assignment.notification_service.config.NatsConfig.*;
 
 @Component
 public class UserEventConsumer {
+    private final NotificationRepository notificationRepository;
+
 
     private static final Logger log = LoggerFactory.getLogger(UserEventConsumer.class);
 
@@ -35,10 +40,12 @@ public class UserEventConsumer {
     public UserEventConsumer(JetStream jetStream,
                              ObjectMapper objectMapper,
                              NotificationProvider notificationProvider,
+                             NotificationRepository notificationRepository,
                              @Value("${notification.max-deliver}") int maxDeliver) {
         this.jetStream = jetStream;
         this.objectMapper = objectMapper;
         this.notificationProvider = notificationProvider;
+        this.notificationRepository = notificationRepository;
         this.maxDeliver = maxDeliver;
     }
 
@@ -88,15 +95,33 @@ public class UserEventConsumer {
             return;
         }
 
+        UserEvent event = null;
         try {
-            UserEvent event = objectMapper.readValue(msg.getData(), UserEvent.class);
+            event = objectMapper.readValue(msg.getData(), UserEvent.class);
             notificationProvider.send(event);
+            saveRecord(event, Notification.Status.SENT);
             msg.ack();
         } catch (Exception e) {
             log.warn("Failed to process message (attempt {}/{}), will retry: {}",
                     deliveredCount, maxDeliver, e.getMessage());
+            if (event != null) {
+                saveRecord(event, Notification.Status.FAILED);
+            }
             msg.nak();
         }
+    }
+
+    private void saveRecord(UserEvent event, Notification.Status status) {
+        Notification record = Notification.builder()
+                .userId(event.userId())
+                .eventType(event.eventType())
+                .message(status == Notification.Status.SENT
+                        ? "Notification sent for " + event.eventType()
+                        : "Failed to send notification for " + event.eventType())
+                .status(status)
+                .sentAt(Instant.now())
+                .build();
+        notificationRepository.save(record);
     }
 
 }

@@ -1,0 +1,47 @@
+# --- Environment / secrets ---
+.env
+*.env
+!.env.example
+
+# --- Gradle ---
+.gradle/
+**/build/
+!src/**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# --- Compiled class files ---
+*.class
+
+# --- Spring Boot ---
+*.jar
+*.war
+!gradle/wrapper/gradle-wrapper.jar
+
+# --- Logs ---
+*.log
+logs/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE ---
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+bin/
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- MySQL / NATS local data (if bind-mounted instead of named volumes) ---
+mysql-data/
+nats-data/
