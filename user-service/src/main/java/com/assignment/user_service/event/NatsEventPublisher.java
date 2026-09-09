@@ -49,4 +49,25 @@ public class NatsEventPublisher {
             log.error("Failed to publish {} event for user {}", payload.eventType(), payload.userId(), e);
         }
     }
+
+
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onUserUpdated(UserUpdatedEvent event) {
+        UserEvent payload = event.payload();
+        try {
+            byte[] body = objectMapper.writeValueAsBytes(payload);
+            PublishAck ack = jetStream.publish(
+                    payload.eventType(),
+                    body,
+                    PublishOptions.builder()
+                            .messageId(payload.eventId().toString())
+                            .build()
+            );
+            log.info("Publish {} event for user {} — stream seq {}",
+                    payload.eventType(), payload.userId(), ack.getSeqno());
+        } catch (Exception e) {
+            log.error("Failed to publish {} event for user {}", payload.eventType(), payload.userId(), e);
+        }
+    }
 }
